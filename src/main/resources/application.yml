@@ -1,0 +1,94 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: intelligent customer service
+  # 数据库配置
+  datasource:
+    dynamic:
+      primary: mysql
+      datasource:
+        mysql:
+          url: jdbc:p6spy:mysql://127.0.0.1:3306/test?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+          username: root
+          password: app_password
+          driver-class-name: com.p6spy.engine.spy.P6SpyDriver
+  # Redis配置
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      password: app_password
+      database: 0
+      timeout: 5000ms
+  # LLM 配置（OpenAI 兼容接口，支持任意兼容的模型服务）
+  ai:
+    # ----- Chat 模型：使用 DeepSeek / 标准 OpenAI -----
+    openai:
+      api-key: ${OPENAI_API_KEY:sk-e57ac6e1ec0d428e91baf9ee8b796191}
+      base-url: https://api.deepseek.com
+      completions-path: /chat/completions
+      chat:
+        options:
+          model: ${MODEL_NAME:deepseek-v4-flash}
+    # ----- Embedding 模型：使用 DashScope 通义千问嵌入 -----
+    embedding:
+      openai:
+        api-key: ${DASHSCOPE_API_KEY:sk-1920a929b50f4d14a1d8dc4f93229e2c}
+        base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+        options:
+          model: text-embedding-v3
+    # ----- 对话记忆 / 向量存储 -----
+    memory:
+      jdbc:
+        table-name: ai_chat_memory
+        create-table: true
+    vectorstore:
+      redis:
+        initialize-schema: true
+        index-name: knowledge_vector_index
+        prefix: "rag:"
+
+# MyBatis-Plus 配置
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*Mapper.xml
+  type-aliases-package: cn.sg.intelligentcustomerservice.model.entity
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: AUTO
+
+feign:
+  client:
+    config:
+      default:
+        connect-timeout: 5000
+        read-timeout: 10000
+
+# 日志配置
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread]  %-5level %logger{36} - %msg%n"
+  level:
+    root: INFO
+    cn.sg.intelligentcustomerservice: DEBUG
+    org.springframework.ai: DEBUG
+    io.modelcontextprotocol.client: DEBUG
+    io.modelcontextprotocol.spec: DEBUG
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+
+# 知识库文档加载配置
+app:
+  knowledge:
+    csv-path: doc/QA.csv
+  rag:
+    top-k: 3
+    similarity-threshold: 0.7
